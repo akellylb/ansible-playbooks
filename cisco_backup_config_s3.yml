@@ -1,0 +1,53 @@
+---
+- name: Backup Cisco Switch Configurations to Wasabi S3
+  hosts: cisco_switches
+  gather_facts: no
+
+  vars:
+    s3_bucket: your-wasabi-bucket-name
+    s3_object_prefix: cisco-backups/
+    wasabi_region: us-east-1  # Replace with your Wasabi region
+    ansible_connection: network_cli
+    ansible_network_os: ios
+    ansible_python_interpreter: /usr/bin/python3
+
+  tasks:
+    - name: Verify Wasabi credentials are available
+      ansible.builtin.assert:
+        that:
+          - wasabi_s3_credentials is defined
+          - wasabi_s3_credentials.username is defined
+          - wasabi_s3_credentials.password is defined
+        fail_msg: "Wasabi S3 credentials are not properly set in Semaphore keystore or not associated with this task"
+
+    - name: Get current date and time
+      ansible.builtin.set_fact:
+        backup_time: "{{ ansible.builtin.pipe('date +%Y%m%d_%H%M%S') }}"
+
+    - name: Backup running config
+      cisco.ios.ios_config:
+        backup: yes
+      register: config_output
+
+    - name: Upload config to Wasabi S3
+      amazon.aws.aws_s3:
+        bucket: "{{ s3_bucket }}"
+        object: "{{ s3_object_prefix }}{{ inventory_hostname }}_config_{{ backup_time }}.cfg"
+        src: "{{ config_output.backup_path }}"
+        mode: put
+        encrypt: yes
+        s3_url: "https://s3.{{ wasabi_region }}.wasabisys.com"
+      delegate_to: localhost
+      vars:
+        aws_access_key: "{{ wasabi_s3_credentials.username }}"
+        aws_secret_key: "{{ wasabi_s3_credentials.password }}"
+
+    - name: Display backup status
+      ansible.builtin.debug:
+        msg: "Configuration backup uploaded to s3://{{ s3_bucket }}/{{ s3_object_prefix }}{{ inventory_hostname }}_config_{{ backup_time }}.cfg"
+
+    - name: Remove local backup file
+      ansible.builtin.file:
+        path: "{{ config_output.backup_path }}"
+        state: absent
+      delegate_to: localhost
