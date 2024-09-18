@@ -1,6 +1,6 @@
 ---
 - name: Backup Cisco Switch Configurations to Wasabi S3
-  hosts: cisco_switches
+  hosts: ciscoswitches
   gather_facts: no
 
   vars:
