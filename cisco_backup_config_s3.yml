@@ -4,22 +4,14 @@
   gather_facts: no
 
   vars:
-    s3_bucket: your-wasabi-bucket-name
+    s3_bucket: ciscobackups
     s3_object_prefix: cisco-backups/
-    wasabi_region: us-east-1  # Replace with your Wasabi region
+    wasabi_region: us-west-1  # Replace with your Wasabi region
     ansible_connection: network_cli
     ansible_network_os: ios
     ansible_python_interpreter: /usr/bin/python3
 
   tasks:
-    - name: Verify Wasabi credentials are available
-      ansible.builtin.assert:
-        that:
-          - wasabi_s3_credentials is defined
-          - wasabi_s3_credentials.username is defined
-          - wasabi_s3_credentials.password is defined
-        fail_msg: "Wasabi S3 credentials are not properly set in Semaphore keystore or not associated with this task"
-
     - name: Get current date and time
       ansible.builtin.set_fact:
         backup_time: "{{ ansible.builtin.pipe('date +%Y%m%d_%H%M%S') }}"
@@ -39,8 +31,8 @@
         s3_url: "https://s3.{{ wasabi_region }}.wasabisys.com"
       delegate_to: localhost
       vars:
-        aws_access_key: "{{ wasabi_s3_credentials.username }}"
-        aws_secret_key: "{{ wasabi_s3_credentials.password }}"
+        aws_access_key: "{{ wasabi_credentials.username }}"
+        aws_secret_key: "{{ wasabi_credentials.password }}"
 
     - name: Display backup status
       ansible.builtin.debug:
