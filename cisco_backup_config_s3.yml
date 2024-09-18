@@ -14,7 +14,7 @@
   tasks:
     - name: Get current date and time
       ansible.builtin.set_fact:
-        backup_time: "{{ ansible.builtin.pipe('date +%Y%m%d_%H%M%S') }}"
+        backup_time: "{{ '%Y%m%d_%H%M%S' | strftime }}"
 
     - name: Backup running config
       cisco.ios.ios_config:
