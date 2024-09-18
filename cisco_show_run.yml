@@ -1,6 +1,6 @@
 ---
 - name: Run 'show run' on Cisco Switch
-  hosts: cisco_switches
+  hosts: ciscoswitches
   gather_facts: no
   
   vars:
